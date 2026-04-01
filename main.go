@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -23,7 +24,7 @@ var stopWords = map[string]bool {
 }
 
 var queue = []string {
-	"https://example.com",
+	"https://books.toscrape.com/",
 }
 
 var visited = make(map[string]bool)
@@ -118,10 +119,11 @@ func fetch(url string) {
 		panic(err)
 	}
 
-
+	processHTML(url, doc)
+	visited[url] = true
 }
 
-func saveIndex(filename string, idx InvertedIndex) error {
+func saveIndex(filename string) error {
 	fd, err := os.Create(filename)
 	if err != nil {
 		return err
@@ -130,7 +132,7 @@ func saveIndex(filename string, idx InvertedIndex) error {
 
 	enc := json.NewEncoder(fd)
 	enc.SetIndent("", " ")
-	return enc.Encode(idx)
+	return enc.Encode(index)
 }
 
 func sayHello(name string) {
@@ -138,6 +140,18 @@ func sayHello(name string) {
 }
 
 func main() {
+	startTime := time.Now()
+	for cur := queue[0]; len(queue) > 0; cur = queue[0] {
+		fmt.Println(len(queue))
+		if len(visited) > 10 {
+			fmt.Println("reached max!")
+			break
+		}
+		queue = queue[1:]
+		fetch(cur)
+	}
+	saveIndex("test1")
+	fmt.Println("Total Time Elapsed: ", time.Since(startTime))
 	fmt.Println("Hello, World!")
 	sayHello("Alice")
 }
