@@ -12,8 +12,6 @@ import (
 	"golang.org/x/net/html"
 )
 
-type InvertedIndex map[string][]string
-
 var stopWords = map[string]bool {
 	"a": true,
 	"the": true,
@@ -23,6 +21,16 @@ var stopWords = map[string]bool {
 	"to": true,
 	"in": true,
 }
+
+var queue = []string {
+	"https://example.com",
+}
+
+var visited = make(map[string]bool)
+
+var index = make(map[string]map[string]bool)
+
+
 
 func filterStopWords(words []string) []string {
 	var res []string
@@ -55,25 +63,43 @@ func resolveURL(baseStr string, refStr string) string {
 	return base.ResolveReference(ref).String()
 }
 
-func processHTML(n *html.Node) {
+func processHTML(baseURL string, n *html.Node) {
 	if n.Type == html.ElementNode && (n.Data == "script" || n.Data == "style") {
 		return
 	}
 	
 	if n.Type == html.TextNode {
-
+		text := strings.TrimSpace(n.Data)
+		if text != "" {
+			for _, word := range tokenize(text) {
+				if index[word] == nil {
+					index[word] = make(map[string]bool)
+				}
+				index[word][baseURL] = true
+			}
+		}
 	}
 
 	if n.Type == html.ElementNode && n.Data == "a" {
 		for _, attr := range n.Attr {
 			if attr.Key == "href" {
 				href := strings.TrimSpace(attr.Val)
+
+				if href == "" ||
+					strings.HasPrefix(href, "#") ||
+					strings.HasPrefix(href, "javscript:") ||
+					strings.HasPrefix(href, "mailto:") {
+						continue
+				}
+				
+				url := resolveURL(baseURL, href)
+				queue = append(queue, url)
 			}
 		}
 	}
 
 	for doc := n.FirstChild; doc != nil; doc = doc.NextSibling {
-		processHTML(doc)
+		processHTML(baseURL, doc)
 	}
 }
 
@@ -87,7 +113,7 @@ func fetch(url string) {
 		panic(resp.Status)
 	}
 
-	doc, err := html.Parse(resp)
+	doc, err := html.Parse(resp.Body)
 	if err != nil {
 		panic(err)
 	}
