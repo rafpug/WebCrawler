@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -31,9 +32,9 @@ var visited = make(map[string]bool)
 
 var index = make(map[string]map[string]bool)
 
-var maxPages = 10
+var maxPages = 50
 
-
+var regex = regexp.MustCompile("[a-z0-9]+")
 
 func filterStopWords(words []string) []string {
 	var res []string
@@ -47,23 +48,22 @@ func filterStopWords(words []string) []string {
 
 func tokenize(text string) []string {
 	text = strings.ToLower(text)
-	regex := regexp.MustCompile("[a-z0-9]+")
 	res := regex.FindAllString(text, -1)
 	return filterStopWords(res)
 }
 
-func resolveURL(baseStr string, refStr string) string {
+func resolveURL(baseStr string, refStr string) (string, error) {
 	base, err := url.Parse(baseStr)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	ref, err := url.Parse(refStr)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
-	return base.ResolveReference(ref).String()
+	return base.ResolveReference(ref).String(), nil
 }
 
 func processHTML(baseURL string, n *html.Node) {
@@ -95,7 +95,10 @@ func processHTML(baseURL string, n *html.Node) {
 						continue
 				}
 				
-				url := resolveURL(baseURL, href)
+				url, err := resolveURL(baseURL, href)
+				if err != nil {
+					continue
+				}
 				queue = append(queue, url)
 			}
 		}
@@ -106,23 +109,25 @@ func processHTML(baseURL string, n *html.Node) {
 	}
 }
 
-func fetch(url string) {
+func fetch(url string) error {
 	resp, err := http.Get(url)
 	if err != nil {
-		panic(err)
+		return err
 	}
+	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		panic(resp.Status)
+		return fmt.Errorf("%s", resp.Status)
 	}
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	processHTML(url, doc)
 	visited[url] = true
+	return nil
 }
 
 func saveIndex(filename string) error {
@@ -137,26 +142,34 @@ func saveIndex(filename string) error {
 	return enc.Encode(index)
 }
 
-func sayHello(name string) {
-	fmt.Println("Hello from another function! ", name)
-}
-
 func main() {
 	startTime := time.Now()
+
+	logFile, err := os.OpenFile("crawler.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		panic(err)
+	}
+	defer logFile.Close()
+
+	logger := log.New(logFile, "", log.LstdFlags)
+
 	for cur := queue[0]; len(queue) > 0; cur = queue[0] {
 		queue = queue[1:]
 		if visited[cur] {
 			continue
 		}
-		fmt.Println(len(queue))
 		if len(visited) > maxPages {
 			fmt.Println("reached max!")
 			break
 		}
-		fetch(cur)
+
+		err := fetch(cur)
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			logger.Println(cur)
+		}
 	}
 	saveIndex("test1")
 	fmt.Println("Total Time Elapsed: ", time.Since(startTime))
-	fmt.Println("Hello, World!")
-	sayHello("Alice")
 }
