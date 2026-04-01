@@ -31,6 +31,8 @@ var visited = make(map[string]bool)
 
 var index = make(map[string]map[string]bool)
 
+var maxPages = 10
+
 
 
 func filterStopWords(words []string) []string {
@@ -142,12 +144,15 @@ func sayHello(name string) {
 func main() {
 	startTime := time.Now()
 	for cur := queue[0]; len(queue) > 0; cur = queue[0] {
+		queue = queue[1:]
+		if visited[cur] {
+			continue
+		}
 		fmt.Println(len(queue))
-		if len(visited) > 10 {
+		if len(visited) > maxPages {
 			fmt.Println("reached max!")
 			break
 		}
-		queue = queue[1:]
 		fetch(cur)
 	}
 	saveIndex("test1")
