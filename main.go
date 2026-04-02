@@ -32,7 +32,7 @@ var visited = make(map[string]bool)
 
 var index = make(map[string]map[string]bool)
 
-var maxPages = 50
+var maxPages = 1000000
 
 var regex = regexp.MustCompile("[a-z0-9]+")
 
@@ -168,6 +168,13 @@ func main() {
 			fmt.Println(err)
 		} else {
 			logger.Println(cur)
+			n := len(visited)
+			for n%10 == 0 {
+				n /= 10
+			}
+			if n == 1 {
+				fmt.Println("Reached ", len(visited), " pages in ", time.Since(startTime))
+			}
 		}
 	}
 	saveIndex("test1")
