@@ -153,7 +153,8 @@ func main() {
 
 	logger := log.New(logFile, "", log.LstdFlags)
 
-	for cur := queue[0]; len(queue) > 0; cur = queue[0] {
+	for len(queue) > 0 {
+		cur := queue[0]
 		queue = queue[1:]
 		if visited[cur] {
 			continue
