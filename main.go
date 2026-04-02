@@ -179,7 +179,7 @@ func main() {
 
 		err := fetch(cur)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Println("URL: ", cur, " ", err)
 		} else {
 			logger.Println(cur)
 			n := len(visited)
