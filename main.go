@@ -25,7 +25,7 @@ var stopWords = map[string]bool {
 }
 
 var queue = []string {
-	"https://books.toscrape.com/",
+	"https://en.wiktionary.org/wiki/Wiktionary:Main_Page",
 }
 
 var visited = make(map[string]bool)
@@ -110,7 +110,20 @@ func processHTML(baseURL string, n *html.Node) {
 }
 
 func fetch(url string) error {
-	resp, err := http.Get(url)
+	client := &http.Client{
+		Timeout: 15 * time.Second,
+	}
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("User-Agent", "CrawlerBot")
+	req.Header.Set("Accept", "text/html,application/xhtml+xml")
+	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
