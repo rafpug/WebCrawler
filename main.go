@@ -90,7 +90,7 @@ func processHTML(baseURL string, n *html.Node) {
 
 				if href == "" ||
 					strings.HasPrefix(href, "#") ||
-					strings.HasPrefix(href, "javscript:") ||
+					strings.HasPrefix(href, "javascript:") ||
 					strings.HasPrefix(href, "mailto:") {
 						continue
 				}
@@ -119,7 +119,7 @@ func fetch(url string) error {
 		return err
 	}
 
-	req.Header.Set("User-Agent", "CrawlerBot")
+	req.Header.Set("User-Agent", "MyWikiIndexer/1.0 (salcedop)")
 	req.Header.Set("Accept", "text/html,application/xhtml+xml")
 	req.Header.Set("Accept-Language", "en-US,en;q=0.9")
 
@@ -179,7 +179,7 @@ func main() {
 
 		err := fetch(cur)
 		if err != nil {
-			fmt.Println("URL: ", cur, " ", err)
+			//fmt.Println("URL: ", cur, " ", err)
 		} else {
 			logger.Println(cur)
 			n := len(visited)
@@ -188,6 +188,7 @@ func main() {
 			}
 			if n == 1 {
 				fmt.Println("Reached ", len(visited), " pages in ", time.Since(startTime))
+				saveIndex("test1")
 			}
 		}
 	}
