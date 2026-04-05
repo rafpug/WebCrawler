@@ -1,1 +1,5 @@
 To run the webcrawler: 'go run .'
+
+To download dependencies: 'go mod tidy'
+
+This web crawler sequentially navigates through wikipedia and reverse indexes all displayed words
